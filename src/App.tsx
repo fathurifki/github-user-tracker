@@ -16,6 +16,11 @@ import ProjectResult from "./components/ui/project-result";
 function App() {
   const env = process.env.GITHUB_TOKEN;
 
+  const [totalResults, setTotalResults] = useState(() => {
+    const cachedTotal = getSessionCache("totalResults");
+    return typeof cachedTotal === "number" ? cachedTotal : 0;
+  });
+
   const [searchQuery, setSearchQuery] = useState(() => {
     const cachedQuery = getSessionCache("lastSearchQuery");
     return typeof cachedQuery === "string" ? cachedQuery : "";
@@ -48,6 +53,18 @@ function App() {
     return Array.isArray(favRaw) ? favRaw : [];
   });
 
+  const [visibleCount, setVisibleCount] = useState(() => {
+    const cachedVisibleCount = getSessionCache("visibleCount");
+    return typeof cachedVisibleCount === "number" ? cachedVisibleCount : 5;
+  });
+
+  const [currentPage, setCurrentPage] = useState(() => {
+    const cachedCurrentPage = getSessionCache("currentPage");
+    return typeof cachedCurrentPage === "number" ? cachedCurrentPage : 1;
+  });
+
+  const perPage = 100;
+
   useEffect(() => {
     setSessionCache("favorites", favorites);
   }, [favorites]);
@@ -57,36 +74,70 @@ function App() {
     setSessionCache("lastSearchResults", searchResults);
     setSessionCache("openUserIds", openUserIds);
     setSessionCache("userRepos", userRepos);
-  }, [searchQuery, searchResults, openUserIds, userRepos]);
+    setSessionCache("totalResults", totalResults);
+    setSessionCache("currentPage", currentPage);
+    setSessionCache("visibleCount", visibleCount);
+    setSessionCache("perPage", perPage);
+  }, [
+    searchQuery,
+    searchResults,
+    openUserIds,
+    userRepos,
+    totalResults,
+    currentPage,
+    visibleCount,
+    perPage,
+  ]);
 
-  const fetchingUsers = async (value: string) => {
-    setSearchQuery(value);
-    const cached = getUserQueryCache(value);
-    if (cached) {
-      setSearchResults(cached);
-      return;
-    }
-
-    const params = new URLSearchParams({
-      page: "1",
-      per_page: "42",
-      q: value,
-    });
-
+  const apiFetchingUser = async (value: string) => {
     const response = await apiFetch(
-      `https://api.github.com/search/users?${params.toString()}`,
+      `https://api.github.com/search/users?${value}`,
       {
         method: "GET",
         headers: {
-          // "Content-Type": "application/json",
           Authorization: `Bearer ${env}`,
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
         },
       }
     );
+    return response;
+  };
+
+  const fetchingUsers = async (value: string) => {
+    setSearchQuery(value);
+    setCurrentPage(1);
+    const cached = getUserQueryCache(value);
+    if (cached) {
+      setSearchResults(cached);
+      setVisibleCount(5);
+      return;
+    }
+
+    const params = new URLSearchParams({
+      page: "1",
+      per_page: perPage.toString(),
+      q: value,
+    });
+
+    const response = await apiFetchingUser(params.toString());
+    setTotalResults(response.total_count);
+    setSessionCache("totalResults", response.total_count);
     setUserQueryCache(value, response.items);
     setSearchResults(response.items);
+    setVisibleCount(5);
+  };
+
+  const loadNextPage = async () => {
+    const nextPage = currentPage + 1;
+    const params = new URLSearchParams({
+      page: nextPage.toString(),
+      per_page: perPage.toString(),
+      q: searchQuery,
+    });
+    const response = await apiFetchingUser(params.toString());
+    setSearchResults((prev) => [...prev, ...response.items]);
+    setCurrentPage(nextPage);
   };
 
   const fetchDetailRepos = async (username: string, userId: string) => {
@@ -147,6 +198,23 @@ function App() {
   const isFavorite = (repoId: number) =>
     favorites.some((fav: any) => fav.id === repoId);
 
+  const handleLoadMore = async () => {
+    if (visibleCount < totalResults) {
+      if (visibleCount + 5 <= searchResults.length) {
+        setVisibleCount((prev) => Math.min(prev + 5, totalResults));
+      } else if (searchResults.length < totalResults) {
+        await loadNextPage();
+        setVisibleCount((prev) => Math.min(prev + 5, totalResults));
+      }
+      setTimeout(() => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 0);
+    }
+  };
+
   return (
     <>
       <div className="p-4">
@@ -158,8 +226,14 @@ function App() {
         />
       </div>
 
+      {searchResults.length > 0 && (
+        <div className="text-center text-gray-500 mb-4">
+          {totalResults} results found
+        </div>
+      )}
+      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-        {searchResults?.map((user) => (
+        {searchResults?.slice(0, visibleCount).map((user) => (
           <div className="relative" key={user.id}>
             <SearchResult
               key={user.id}
@@ -228,6 +302,31 @@ function App() {
           </div>
         ))}
       </div>
+      {visibleCount < totalResults && (
+        <div className="fixed left-1/2 transform -translate-x-1/2 z-50 flex justify-center bottom-20 md:bottom-8">
+          <span
+            className="cursor-pointer inline-flex items-center gap-2 px-6 py-2 text-black font-semibold rounded-full shadow-lg transition-all duration-200 active:scale-95 select-none bg-white"
+            onClick={handleLoadMore}
+            tabIndex={0}
+            role="button"
+          >
+            <svg
+              className="w-5 h-5 animate-bounce"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+            Load More
+          </span>
+        </div>
+      )}
     </>
   );
 }
