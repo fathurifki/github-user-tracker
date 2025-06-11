@@ -106,7 +106,7 @@ function App() {
   };
 
   const isFavorite = (repoId: number) => favorites.some((fav: any) => fav.id === repoId);
-
+  console.log(favorites);
   return (
     <>
       <div className="p-4">
