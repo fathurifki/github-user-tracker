@@ -13,7 +13,7 @@ export default function SearchResult({
 }: SearchResultProps) {
   return (
     <div
-      className="flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 transition-colors duration-200 hover:bg-gray-100 cursor-pointer"
+      className="group flex items-center gap-4 bg-white px-4 min-h-[72px] py-2 transition-colors duration-200 hover:bg-gray-100 cursor-pointer relative"
       onClick={() => onClick(name)}
     >
       <div
@@ -27,6 +27,11 @@ export default function SearchResult({
         <p className="text-[#6a7581] text-sm font-normal leading-normal line-clamp-2 text-left">
           {role}
         </p>
+      </div>
+      <div className="absolute right-4 bottom-2 flex justify-end pointer-events-none">
+        <span className="text-sm font-light text-gray-500 px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 italic">
+          Click to expand Repositories
+        </span>
       </div>
     </div>
   );

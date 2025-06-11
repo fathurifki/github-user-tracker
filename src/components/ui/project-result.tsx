@@ -1,4 +1,5 @@
 import { GitFork, BookmarkIcon as BookmarkSimple } from "lucide-react";
+import TooltipWrapper from "./tooltip-wrapper";
 
 interface ProjectResultProps {
   name: string;
@@ -30,41 +31,47 @@ export default function ProjectResult({
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
-        <span className="inline-flex items-center mr-3 text-sm text-gray-500">
-          <GitFork size={16} className="mr-1" />
-          {forkCount}
-        </span>
-        <span className="inline-flex items-center mr-3 text-sm text-gray-500">
-          <svg
-            className="mr-1"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <circle cx="12" cy="16" r="1" />
-          </svg>
-          {openIssues}
-        </span>
-        <span className="inline-flex items-center mr-3 text-sm text-gray-500">
-          <svg
-            className="mr-1"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            viewBox="0 0 24 24"
-          >
-            <path d="M1.5 12s4-7 10.5-7 10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-          {watchers}
-        </span>
+        <TooltipWrapper content={`${forkCount} forks`}>
+          <span className="inline-flex items-center mr-3 text-sm text-gray-500">
+            <GitFork size={16} className="mr-1" />
+            {forkCount}
+          </span>
+        </TooltipWrapper>
+        <TooltipWrapper content={`${openIssues} open issues`}>
+          <span className="inline-flex items-center mr-3 text-sm text-gray-500">
+            <svg
+              className="mr-1"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <circle cx="12" cy="16" r="1" />
+            </svg>
+            {openIssues}
+          </span>
+        </TooltipWrapper>
+        <TooltipWrapper content={`${watchers} watchers`}>
+          <span className="inline-flex items-center mr-3 text-sm text-gray-500">
+            <svg
+              className="mr-1"
+              width="16"
+              height="16"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              viewBox="0 0 24 24"
+            >
+              <path d="M1.5 12s4-7 10.5-7 10.5 7 10.5 7-4 7-10.5 7S1.5 12 1.5 12z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+            {watchers}
+          </span>
+        </TooltipWrapper>
         <div
           className="text-[#121416] flex size-7 items-center justify-center transition-colors group-hover:text-[#6366f1]"
           onClick={onSave}
