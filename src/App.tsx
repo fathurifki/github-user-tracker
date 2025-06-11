@@ -13,10 +13,18 @@ import {
 } from "./lib/utils";
 import ProjectResult from "./components/ui/project-result";
 
+
 function App() {
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const env = process.env.GITHUB_TOKEN
+
+  const [searchResults, setSearchResults] = useState<any[]>(() => {
+    const raw = sessionStorage.getItem("searchResults");
+    return raw ? JSON.parse(raw) : [];
+  });
+  
   const [userRepos, setUserRepos] = useState<Record<string, any[]>>({});
   const [openUserIds, setOpenUserIds] = useState<string[]>([]);
+  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
   const [favorites, setFavorites] = useState<any[]>(() => {
     const favRaw = getSessionCache("favorites");
     return Array.isArray(favRaw) ? favRaw : [];
@@ -25,6 +33,8 @@ function App() {
   useEffect(() => {
     setSessionCache("favorites", favorites);
   }, [favorites]);
+
+  console.log(env);
 
   const fetchingUsers = async (value: string) => {
     const cached = getUserQueryCache(value);
@@ -44,8 +54,8 @@ function App() {
       {
         method: "GET",
         headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
+          // "Content-Type": "application/json",
+          "Authorization": `Bearer ${env}`,
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
         },
@@ -64,25 +74,32 @@ function App() {
 
     if (userRepos[userId]) return;
 
-    const cached = getUserReposCache(username);
-    if (cached) {
-      setUserRepos((prev) => ({ ...prev, [userId]: cached }));
-      return;
-    }
+    setIsLoadingRepos(true);
 
-    const response = await apiFetch(
-      `https://api.github.com/users/${username}/repos`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/vnd.github+json",
-          "X-GitHub-Api-Version": "2022-11-28",
-          Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
+    try {
+      const cached = getUserReposCache(username);
+      if (cached) {
+        setUserRepos((prev) => ({ ...prev, [userId]: cached }));
+        return;
       }
-    );
-    setUserReposCache(username, response);
-    setUserRepos((prev) => ({ ...prev, [userId]: response }));
+
+      const response = await apiFetch(
+        `https://api.github.com/users/${username}/repos`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+            Authorization: `Bearer ${env}`,
+          },
+        }
+      );
+      setUserReposCache(username, response);
+      setUserRepos((prev) => ({ ...prev, [userId]: response }));
+    } finally {
+      setIsLoadingRepos(false);
+    }
   };
 
   const addToFavorites = (repo: any) => {
@@ -105,7 +122,7 @@ function App() {
   };
 
   const isFavorite = (repoId: number) => favorites.some((fav: any) => fav.id === repoId);
-  console.log(favorites);
+
   return (
     <>
       <div className="p-4">
@@ -127,21 +144,33 @@ function App() {
             />
             {openUserIds.includes(user.id) && (
               <div className="max-h-[500px] overflow-y-auto">
-                {(userRepos[user.id] || []).map((repo) => (
-                  <ProjectResult
-                    key={repo.id}
-                    name={repo.name}
-                    id={isFavorite(repo.id) ? repo.id : undefined}
-                    forkCount={repo.forks_count}
-                    openIssues={repo.open_issues}
-                    watchers={repo.watchers}
-                    onSave={() =>
-                      isFavorite(repo.id)
-                        ? removeFromFavorites(repo)
-                        : addToFavorites(repo)
-                    }
-                  />
-                ))}
+                {isLoadingRepos ? (
+                  <div className="flex justify-center items-center p-4">
+                    <svg className="animate-spin h-6 w-6 text-gray-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span className="text-gray-500">Fetching Repositories</span>
+                  </div>
+                ) : (userRepos[user.id] || []).length === 0 ? (
+                  <div className="text-gray-500 p-4">There is no repository on this user</div>
+                ) : (
+                  (userRepos[user.id] || []).map((repo) => (
+                    <ProjectResult
+                      key={repo.id}
+                      name={repo.name}
+                      id={isFavorite(repo.id) ? repo.id : undefined}
+                      forkCount={repo.forks_count}
+                      openIssues={repo.open_issues}
+                      watchers={repo.watchers}
+                      onSave={() =>
+                        isFavorite(repo.id)
+                          ? removeFromFavorites(repo)
+                          : addToFavorites(repo)
+                      }
+                    />
+                  ))
+                )}
               </div>
             )}
           </div>
