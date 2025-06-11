@@ -45,6 +45,7 @@ function App() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
         },
@@ -77,7 +78,7 @@ function App() {
           "Content-Type": "application/json",
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
-        },
+          Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
       }
     );
     setUserReposCache(username, response);
