@@ -12,7 +12,6 @@ export default ({ mode }: { mode: string }) => {
     ])
   );
 
-  console.log("ENV", updatedEnv);
   return defineConfig({
     plugins: [
       react(),
