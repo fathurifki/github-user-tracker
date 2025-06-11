@@ -1,5 +1,8 @@
 FROM node:20-alpine AS builder
 
+ARG VITE_GITHUB_TOKEN=${VITE_GITHUB_TOKEN}
+ENV VITE_GITHUB_TOKEN=${VITE_GITHUB_TOKEN}
+
 WORKDIR /app
 
 COPY package.json yarn.lock ./
