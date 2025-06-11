@@ -13,18 +13,19 @@ import {
 } from "./lib/utils";
 import ProjectResult from "./components/ui/project-result";
 
-
 function App() {
-  const env = process.env.GITHUB_TOKEN
+  const env = process.env.GITHUB_TOKEN;
 
-  const [searchResults, setSearchResults] = useState<any[]>(() => {
-    const raw = sessionStorage.getItem("searchResults");
-    return raw ? JSON.parse(raw) : [];
+  const [searchQuery, setSearchQuery] = useState(() => {
+    const cached = getSessionCache("lastSearchQuery");
+    return typeof cached === "string" ? cached : "";
   });
-  
+  const [searchResults, setSearchResults] = useState<any[]>(
+    () => getSessionCache("lastSearchResults") || []
+  );
   const [userRepos, setUserRepos] = useState<Record<string, any[]>>({});
   const [openUserIds, setOpenUserIds] = useState<string[]>([]);
-  const [isLoadingRepos, setIsLoadingRepos] = useState(false);
+  const [isLoadingRepos, setIsLoadingRepos] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<any[]>(() => {
     const favRaw = getSessionCache("favorites");
     return Array.isArray(favRaw) ? favRaw : [];
@@ -34,9 +35,13 @@ function App() {
     setSessionCache("favorites", favorites);
   }, [favorites]);
 
-  console.log(env);
+  useEffect(() => {
+    setSessionCache("lastSearchQuery", searchQuery);
+    setSessionCache("lastSearchResults", searchResults);
+  }, [searchQuery, searchResults]);
 
   const fetchingUsers = async (value: string) => {
+    setSearchQuery(value);
     const cached = getUserQueryCache(value);
     if (cached) {
       setSearchResults(cached);
@@ -55,7 +60,7 @@ function App() {
         method: "GET",
         headers: {
           // "Content-Type": "application/json",
-          "Authorization": `Bearer ${env}`,
+          Authorization: `Bearer ${env}`,
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
         },
@@ -74,7 +79,7 @@ function App() {
 
     if (userRepos[userId]) return;
 
-    setIsLoadingRepos(true);
+    setIsLoadingRepos(userId);
 
     try {
       const cached = getUserReposCache(username);
@@ -98,22 +103,21 @@ function App() {
       setUserReposCache(username, response);
       setUserRepos((prev) => ({ ...prev, [userId]: response }));
     } finally {
-      setIsLoadingRepos(false);
+      setIsLoadingRepos(null);
     }
   };
 
   const addToFavorites = (repo: any) => {
     const payload = {
       id: repo.id,
+      username: repo.username,
       name: repo.name,
       forkCount: repo.forks_count,
       openIssues: repo.open_issues,
       watchers: repo.watchers,
     };
     setFavorites((prev) =>
-      prev.some((fav: any) => fav.id === payload.id)
-        ? prev
-        : [...prev, payload]
+      prev.some((fav: any) => fav.id === payload.id) ? prev : [...prev, payload]
     );
   };
 
@@ -121,12 +125,15 @@ function App() {
     setFavorites((prev) => prev.filter((fav: any) => fav.id !== repo.id));
   };
 
-  const isFavorite = (repoId: number) => favorites.some((fav: any) => fav.id === repoId);
+  const isFavorite = (repoId: number) =>
+    favorites.some((fav: any) => fav.id === repoId);
 
   return (
     <>
       <div className="p-4">
         <SearchInput
+          valueSearch={searchQuery}
+          onChange={setSearchQuery}
           onSubmit={fetchingUsers}
           placeholder="Search the username..."
         />
@@ -144,16 +151,34 @@ function App() {
             />
             {openUserIds.includes(user.id) && (
               <div className="max-h-[500px] overflow-y-auto">
-                {isLoadingRepos ? (
+                {isLoadingRepos === user.id ? (
                   <div className="flex justify-center items-center p-4">
-                    <svg className="animate-spin h-6 w-6 text-gray-500 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    <svg
+                      className="animate-spin h-6 w-6 text-gray-500 mr-2"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                      ></path>
                     </svg>
                     <span className="text-gray-500">Fetching Repositories</span>
                   </div>
                 ) : (userRepos[user.id] || []).length === 0 ? (
-                  <div className="text-gray-500 p-4">There is no repository on this user</div>
+                  <div className="text-gray-500 p-4">
+                    There is no repository on this user
+                  </div>
                 ) : (
                   (userRepos[user.id] || []).map((repo) => (
                     <ProjectResult
@@ -163,11 +188,19 @@ function App() {
                       forkCount={repo.forks_count}
                       openIssues={repo.open_issues}
                       watchers={repo.watchers}
-                      onSave={() =>
-                        isFavorite(repo.id)
-                          ? removeFromFavorites(repo)
-                          : addToFavorites(repo)
-                      }
+                      onSave={() => {
+                        const payload = {
+                          id: repo.id,
+                          username: user.login,
+                          name: repo.name,
+                          forkCount: repo.forks_count,
+                          openIssues: repo.open_issues,
+                          watchers: repo.watchers,
+                        };
+                        return isFavorite(repo.id)
+                          ? removeFromFavorites(payload)
+                          : addToFavorites(payload);
+                      }}
                     />
                   ))
                 )}

@@ -10,6 +10,7 @@ function Favorites() {
       forkCount: number;
       openIssues: number;
       watchers: number;
+      username: string;
     }[]
   >(() => {
     return (
@@ -19,7 +20,8 @@ function Favorites() {
           name: string;
           forkCount: number;
           openIssues: number;
-          watchers: numberƒ;
+          watchers: number;
+          username: string;
         }[]
       >("favorites") || []
     );
@@ -60,7 +62,8 @@ function Favorites() {
           favorites.map((favorite) => (
             <ProjectResult
               key={favorite.id}
-              id={favorite.id}
+              id={+favorite.id}
+              username={favorite.username}
               name={favorite.name}
               forkCount={favorite.forkCount}
               openIssues={favorite.openIssues}
