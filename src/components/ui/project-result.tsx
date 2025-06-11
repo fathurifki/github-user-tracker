@@ -7,6 +7,7 @@ interface ProjectResultProps {
   openIssues?: number;
   watchers?: number;
   onSave?: () => void;
+  username?: string;
 }
 
 export default function ProjectResult({
@@ -16,6 +17,7 @@ export default function ProjectResult({
   watchers,
   onSave,
   id,
+  username,
 }: ProjectResultProps) {
   return (
     <div className="flex items-center gap-4 bg-white px-4 min-h-14 justify-between transition-colors hover:bg-[#f5f6fa] group cursor-pointer">
@@ -24,7 +26,7 @@ export default function ProjectResult({
           <GitFork size={24} />
         </div>
         <p className="text-[#121416] text-base font-normal leading-normal flex-1 truncate">
-          {name}
+          {username ? `${username} / ${name}` : name}
         </p>
       </div>
       <div className="flex items-center gap-2 shrink-0">
