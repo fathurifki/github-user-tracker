@@ -17,14 +17,31 @@ function App() {
   const env = process.env.GITHUB_TOKEN;
 
   const [searchQuery, setSearchQuery] = useState(() => {
-    const cached = getSessionCache("lastSearchQuery");
-    return typeof cached === "string" ? cached : "";
+    const cachedQuery = getSessionCache("lastSearchQuery");
+    return typeof cachedQuery === "string" ? cachedQuery : "";
   });
+
   const [searchResults, setSearchResults] = useState<any[]>(
     () => getSessionCache("lastSearchResults") || []
   );
-  const [userRepos, setUserRepos] = useState<Record<string, any[]>>({});
-  const [openUserIds, setOpenUserIds] = useState<string[]>([]);
+
+  const [userRepos, setUserRepos] = useState<Record<string, any[]>>(() => {
+    const cachedRepos = getSessionCache("userRepos");
+    if (
+      cachedRepos &&
+      typeof cachedRepos === "object" &&
+      !Array.isArray(cachedRepos)
+    ) {
+      return cachedRepos as Record<string, any[]>;
+    }
+    return {} as Record<string, any[]>;
+  });
+
+  const [openUserIds, setOpenUserIds] = useState<string[]>(() => {
+    const cachedUserIds = getSessionCache("openUserIds");
+    return Array.isArray(cachedUserIds) ? cachedUserIds : [];
+  });
+
   const [isLoadingRepos, setIsLoadingRepos] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<any[]>(() => {
     const favRaw = getSessionCache("favorites");
@@ -38,7 +55,9 @@ function App() {
   useEffect(() => {
     setSessionCache("lastSearchQuery", searchQuery);
     setSessionCache("lastSearchResults", searchResults);
-  }, [searchQuery, searchResults]);
+    setSessionCache("openUserIds", openUserIds);
+    setSessionCache("userRepos", userRepos);
+  }, [searchQuery, searchResults, openUserIds, userRepos]);
 
   const fetchingUsers = async (value: string) => {
     setSearchQuery(value);
