@@ -45,7 +45,7 @@ function App() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer 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`,
+          Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
         },
@@ -76,7 +76,7 @@ function App() {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer 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`,
+          Authorization: `Bearer ${import.meta.env.VITE_GITHUB_TOKEN}`,
           Accept: "application/vnd.github+json",
           "X-GitHub-Api-Version": "2022-11-28",
         },
