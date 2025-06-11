@@ -12,6 +12,7 @@ import {
   setUserReposCache,
 } from "./lib/utils";
 import ProjectResult from "./components/ui/project-result";
+import type { GithubRateLimit, GithubRepo, GithubUser } from "./types";
 
 function App() {
   const env = process.env.GITHUB_TOKEN;
@@ -63,6 +64,11 @@ function App() {
     return typeof cachedCurrentPage === "number" ? cachedCurrentPage : 1;
   });
 
+  const [rateLimit, setRateLimit] = useState({
+    isSearchLimit: false,
+    isRepoLimit: false,
+  });
+
   const perPage = 100;
 
   useEffect(() => {
@@ -88,6 +94,18 @@ function App() {
     visibleCount,
     perPage,
   ]);
+
+  const apiRateLimit = async () => {
+    const response = await apiFetch(`https://api.github.com/rate_limit`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${env}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    return response;
+  };
 
   const apiFetchingUser = async (value: string) => {
     const response = await apiFetch(
@@ -121,6 +139,18 @@ function App() {
     });
 
     const response = await apiFetchingUser(params.toString());
+    const rateLimit = await apiRateLimit();
+    if (rateLimit.resources.search.used >= rateLimit.resources.search.limit) {
+      setRateLimit((prev) => ({
+        ...prev,
+        isSearchLimit: true,
+      }));
+    } else {
+      setRateLimit((prev) => ({
+        ...prev,
+        isSearchLimit: false,
+      }));
+    }
     setTotalResults(response.total_count);
     setSessionCache("totalResults", response.total_count);
     setUserQueryCache(value, response.items);
@@ -158,7 +188,7 @@ function App() {
         return;
       }
 
-      const response = await apiFetch(
+      const response = await apiFetch<GithubRepo[]>(
         `https://api.github.com/users/${username}/repos`,
         {
           method: "GET",
@@ -170,6 +200,19 @@ function App() {
           },
         }
       );
+      const rateLimit: GithubRateLimit = await apiRateLimit();
+      if (rateLimit.rate.used >= rateLimit.rate.limit) {
+        setRateLimit((prev) => ({
+          ...prev,
+          isRepoLimit: true,
+        }));
+      } else {
+        setRateLimit((prev) => ({
+          ...prev,
+          isRepoLimit: false,
+        }));
+        setIsLoadingRepos(null);
+      }
       setUserReposCache(username, response);
       setUserRepos((prev) => ({ ...prev, [userId]: response }));
     } finally {
@@ -177,13 +220,20 @@ function App() {
     }
   };
 
-  const addToFavorites = (repo: any) => {
+  const addToFavorites = (repo: {
+    id: number;
+    username: string;
+    name: string;
+    forkCount: number;
+    openIssues: number;
+    watchers: number;
+  }) => {
     const payload = {
       id: repo.id,
       username: repo.username,
       name: repo.name,
-      forkCount: repo.forks_count,
-      openIssues: repo.open_issues,
+      forkCount: repo.forkCount,
+      openIssues: repo.openIssues,
       watchers: repo.watchers,
     };
     setFavorites((prev) =>
@@ -223,28 +273,45 @@ function App() {
           onChange={setSearchQuery}
           onSubmit={fetchingUsers}
           placeholder="Search the username..."
+          disabled={rateLimit.isSearchLimit}
         />
       </div>
+
+      {rateLimit.isSearchLimit && (
+        <div className="text-center text-red-600 font-semibold mb-4">
+          <p>
+            You have reached the maximum number of requests. Please try again
+            later.
+          </p>
+        </div>
+      )}
 
       {searchResults.length > 0 && (
         <div className="text-center text-gray-500 mb-4">
           {totalResults} results found
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-        {searchResults?.slice(0, visibleCount).map((user) => (
+        {searchResults?.slice(0, visibleCount).map((user: GithubUser) => (
           <div className="relative" key={user.id}>
             <SearchResult
               key={user.id}
               name={user.login}
               role={user.type}
               imageUrl={user.avatar_url}
-              onClick={(name) => fetchDetailRepos(name, user.id)}
+              onClick={(name) => fetchDetailRepos(name, user.id.toString())}
             />
-            {openUserIds.includes(user.id) && (
+            {openUserIds.includes(user.id.toString()) && (
               <div className="max-h-[500px] overflow-y-auto">
-                {isLoadingRepos === user.id ? (
+                {rateLimit.isRepoLimit ? (
+                  <div className="text-center text-red-600 font-semibold mb-4">
+                    <p>
+                      You have reached the maximum number of requests. Please
+                      try again later.
+                    </p>
+                  </div>
+                ) : isLoadingRepos === user.id.toString() ? (
                   <div className="flex justify-center items-center p-4">
                     <svg
                       className="animate-spin h-6 w-6 text-gray-500 mr-2"
@@ -273,7 +340,7 @@ function App() {
                     There is no repository on this user
                   </div>
                 ) : (
-                  (userRepos[user.id] || []).map((repo) => (
+                  (userRepos[user.id] || []).map((repo: GithubRepo) => (
                     <ProjectResult
                       key={repo.id}
                       name={repo.name}

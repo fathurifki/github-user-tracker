@@ -33,6 +33,7 @@ function Favorites() {
 
   type Favorite = {
     id: string;
+    username: string;
     name: string;
     forkCount: number;
     openIssues: number;

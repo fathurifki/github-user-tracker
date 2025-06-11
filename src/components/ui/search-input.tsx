@@ -6,6 +6,7 @@ type SearchInputProps = {
   placeholder?: string;
   valueSearch?: string;
   onChange?: (value: string) => void;
+  disabled?: boolean;
 };
 
 const SearchInput: React.FC<SearchInputProps> = ({
@@ -13,6 +14,7 @@ const SearchInput: React.FC<SearchInputProps> = ({
   placeholder = "Search...",
   valueSearch,
   onChange,
+  disabled,
 }) => {
   const [value, setValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -44,15 +46,22 @@ const SearchInput: React.FC<SearchInputProps> = ({
               setValue(e.target.value);
               if (onChange) onChange(e.target.value);
             }}
-            className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#121416] focus:outline-0 focus:ring-0 border-none bg-[#f1f2f4] focus:border-none h-full placeholder:text-[#6a7581] px-4 rounded-r-none border-r-0 pr-2 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal"
+            disabled={disabled}
+            className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#121416] focus:outline-0 focus:ring-0 border-none bg-[#f1f2f4] focus:border-none h-full placeholder:text-[#6a7581] px-4 rounded-r-none border-r-0 pr-2 rounded-l-none border-l-0 pl-2 text-base font-normal leading-normal ${
+              disabled ? "cursor-not-allowed" : ""
+            }`}
             placeholder={placeholder}
           />
           <div className="flex items-center justify-center rounded-r-xl border-l-0 border-none bg-[#f1f2f4] pr-4">
             {value && (
               <div
-                onClick={handleClear}
-                className="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full bg-transparent text-[#121416] gap-2 text-base font-bold leading-normal tracking-[0.015em] h-auto min-w-0 px-0"
+                onClick={disabled ? undefined : handleClear}
+                className={`flex max-w-[480px] items-center justify-center overflow-hidden rounded-full bg-transparent text-[#121416] gap-2 text-base font-bold leading-normal tracking-[0.015em] h-auto min-w-0 px-0 ${
+                  disabled ? "cursor-not-allowed opacity-50 pointer-events-none" : "cursor-pointer"
+                }`}
                 aria-label="Clear search"
+                tabIndex={disabled ? -1 : 0}
+                aria-disabled={disabled}
               >
                 <div className="text-[#6a7581]">
                   <XCircle size={24} />
