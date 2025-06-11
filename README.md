@@ -1,4 +1,4 @@
-# Github Repo Search
+# Github Explorer
 
 You can access the app [here](https://gh-tracker.stark.pomerain.org/)
 
