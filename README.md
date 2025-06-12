@@ -30,8 +30,8 @@ This repository is a minimal boilerplate for building modern web applications us
 1. **Clone the repository:**
 
    ```bash
-   git clone https://github.com/your-username/your-repo.git
-   cd your-repo
+   git clone git@github.com:fathurifki/github-user-tracker.git
+   cd github-user-tracker
    ```
 
 2. **Install dependencies:**
@@ -39,6 +39,10 @@ This repository is a minimal boilerplate for building modern web applications us
    npm install
    # or
    yarn install
+   ```
+3. **Add Env:**
+   ```bash
+   VITE_GITHUB_TOKEN=
    ```
 
 ### Running the App Locally
