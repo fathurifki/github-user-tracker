@@ -127,11 +127,12 @@ function App() {
   const fetchingUsers = async (value: string) => {
     setSearchQuery(value);
     setCurrentPage(1);
-    setIsLoadingUser(true)
+    setIsLoadingUser(true);
     const cached = getUserQueryCache(value);
     if (cached) {
       setSearchResults(cached);
       setVisibleCount(5);
+      setIsLoadingUser(false);
       return;
     }
 
