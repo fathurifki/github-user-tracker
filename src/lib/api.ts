@@ -19,7 +19,7 @@ export async function apiFetch<T = any>(
   } = options;
 
   let finalUrl = url;
-  
+
   if (params && Object.keys(params).length > 0) {
     const query = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {
@@ -28,7 +28,6 @@ export async function apiFetch<T = any>(
     finalUrl += (url.includes('?') ? '&' : '?') + query.toString();
   }
 
-  // Prepare fetch options
   const fetchOptions: RequestInit = {
     method,
     headers,

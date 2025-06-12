@@ -5,11 +5,12 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function setSessionCache(key: string, value: unknown): void {
+export function setSessionCache(key: string, value: unknown): void | null {
   try {
     sessionStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // Optionally handle storage errors
+    console.error("Error setting session cache", key, value);
+    return null;
   }
 }
 
@@ -19,7 +20,7 @@ export function getSessionCache<T = unknown>(key: string): T | null {
     if (item === null) return null;
     return JSON.parse(item) as T;
   } catch {
-    // Optionally handle parse errors
+    console.error("Error getting session cache", key);
     return null;
   }
 }
