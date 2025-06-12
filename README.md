@@ -40,6 +40,10 @@ This repository is a minimal boilerplate for building modern web applications us
    # or
    yarn install
    ```
+3. **Add Env:**
+   ```bash
+   VITE_GITHUB_TOKEN=
+   ```
 
 ### Running the App Locally
 
