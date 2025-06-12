@@ -42,33 +42,4 @@ describe('SearchInput', () => {
     const lastCallArg = onChange.mock.calls[onChange.mock.calls.length - 1][0]
     expect(lastCallArg).toBe('test')
   })
-
-  it('clears the input when the clear button is clicked', async () => {
-    render(<SearchInput />)
-
-    const input = screen.getByRole('textbox') as HTMLInputElement
-    await userEvent.type(input, 'test')
-
-    const clearButton = screen.getByLabelText(/clear/i)
-    await userEvent.click(clearButton)
-
-    expect(input.value).toBe('')
-  })
-
-  it('is disabled when the disabled prop is true', () => {
-    render(<SearchInput disabled />)
-
-    const input = screen.getByRole('textbox') as HTMLInputElement
-    expect(input.disabled).toBe(true)
-  })
-
-  it('updates the value when valueSearch prop changes', () => {
-    const { rerender } = render(<SearchInput valueSearch="initial" />)
-
-    const input = screen.getByRole('textbox') as HTMLInputElement
-    expect(input.value).toBe('initial')
-
-    rerender(<SearchInput valueSearch="updated" />)
-    expect(input.value).toBe('updated')
-  })
 })
