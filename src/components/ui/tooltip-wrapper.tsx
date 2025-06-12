@@ -13,7 +13,6 @@ export default function TooltipWrapper({
   children,
   content,
 }: TooltipWrapperProps) {
-  console.log(">>>", content);
   return (
     <Tooltip>
       <TooltipTrigger asChild>{children}</TooltipTrigger>

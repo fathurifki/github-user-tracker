@@ -22,12 +22,15 @@ export default ({ mode }: { mode: string }) => {
       globals: true,
       environment: 'jsdom',
       setupFiles: ['./src/test/setup.ts'],
-      include: ['**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],
+      include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}', "src/tests/**/*.tsx"],
       coverage: {
         reporter: ['text', 'json', 'html'],
         exclude: [
-          'node_modules/',
-          'src/test/setup.ts',
+          '**/node_modules/**',
+          '**/dist/**',
+          '**/cypress/**',
+          '**/.{idea,git,cache,output,temp}/**',
+          '**/{karma,rollup,webpack,vite,vitest,jest,ava,babel,nyc,cypress,tsup,build,eslint,prettier}.config.*'
         ],
       },
     },
