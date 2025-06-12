@@ -52,9 +52,7 @@
   },
   "lint-staged": {
     "src/**/*.{ts,tsx}": [
-      "eslint --fix"
-    ],
-    "src/**/*.{test,spec}.{ts,tsx}": [
+      "eslint --fix",
       "vitest run"
     ]
   }
