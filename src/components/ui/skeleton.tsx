@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils"
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
+  console.log("Skeleton", className);
   return (
     <div
       data-slot="skeleton"
