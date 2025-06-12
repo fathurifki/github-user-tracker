@@ -13,6 +13,7 @@ import {
 } from "./lib/utils";
 import ProjectResult from "./components/ui/project-result";
 import type { GithubRateLimit, GithubRepo, GithubUser } from "./types";
+import { SkeletonLoading } from "./components/ui/skeleton-loading";
 
 function App() {
   const env = process.env.GITHUB_TOKEN;
@@ -48,6 +49,7 @@ function App() {
     return Array.isArray(cachedUserIds) ? cachedUserIds : [];
   });
 
+  const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isLoadingRepos, setIsLoadingRepos] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<any[]>(() => {
     const favRaw = getSessionCache("favorites");
@@ -125,6 +127,7 @@ function App() {
   const fetchingUsers = async (value: string) => {
     setSearchQuery(value);
     setCurrentPage(1);
+    setIsLoadingUser(true)
     const cached = getUserQueryCache(value);
     if (cached) {
       setSearchResults(cached);
@@ -150,6 +153,9 @@ function App() {
         ...prev,
         isSearchLimit: false,
       }));
+    }
+    if (response.items.length > 0) {
+      setIsLoadingUser(false);
     }
     setTotalResults(response.total_count);
     setSessionCache("totalResults", response.total_count);
@@ -293,83 +299,91 @@ function App() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
-        {searchResults?.slice(0, visibleCount).map((user: GithubUser) => (
-          <div className="relative" key={user.id}>
-            <SearchResult
-              key={user.id}
-              name={user.login}
-              role={user.type}
-              imageUrl={user.avatar_url}
-              onClick={(name) => fetchDetailRepos(name, user.id.toString())}
-            />
-            {openUserIds.includes(user.id.toString()) && (
-              <div className="max-h-[500px] overflow-y-auto">
-                {rateLimit.isRepoLimit ? (
-                  <div className="text-center text-red-600 font-semibold mb-4">
-                    <p>
-                      You have reached the maximum number of requests. Please
-                      try again later.
-                    </p>
-                  </div>
-                ) : isLoadingRepos === user.id.toString() ? (
-                  <div className="flex justify-center items-center p-4">
-                    <svg
-                      className="animate-spin h-6 w-6 text-gray-500 mr-2"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                      ></path>
-                    </svg>
-                    <span className="text-gray-500">Fetching Repositories</span>
-                  </div>
-                ) : (userRepos[user.id] || []).length === 0 ? (
-                  <div className="text-gray-500 p-4">
-                    There is no repository on this user
-                  </div>
-                ) : (
-                  (userRepos[user.id] || []).map((repo: GithubRepo) => (
-                    <ProjectResult
-                      key={repo.id}
-                      name={repo.name}
-                      id={isFavorite(repo.id) ? repo.id : undefined}
-                      forkCount={repo.forks_count}
-                      openIssues={repo.open_issues}
-                      watchers={repo.watchers}
-                      onSave={() => {
-                        const payload = {
-                          id: repo.id,
-                          username: user.login,
-                          name: repo.name,
-                          forkCount: repo.forks_count,
-                          openIssues: repo.open_issues,
-                          watchers: repo.watchers,
-                        };
-                        return isFavorite(repo.id)
-                          ? removeFromFavorites(payload)
-                          : addToFavorites(payload);
-                      }}
-                    />
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        ))}
+        {isLoadingUser ? (
+          Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="relative">
+              <SkeletonLoading />
+            </div>
+          ))
+        ) : (
+          searchResults?.slice(0, visibleCount).map((user: GithubUser) => (
+            <div className="relative" key={user.id}>
+              <SearchResult
+                key={user.id}
+                name={user.login}
+                role={user.type}
+                imageUrl={user.avatar_url}
+                onClick={(name) => fetchDetailRepos(name, user.id.toString())}
+              />
+              {openUserIds.includes(user.id.toString()) && (
+                <div className="max-h-[500px] overflow-y-auto">
+                  {rateLimit.isRepoLimit ? (
+                    <div className="text-center text-red-600 font-semibold mb-4">
+                      <p>
+                        You have reached the maximum number of requests. Please
+                        try again later.
+                      </p>
+                    </div>
+                  ) : isLoadingRepos === user.id.toString() ? (
+                    <div className="flex justify-center items-center p-4">
+                      <svg
+                        className="animate-spin h-6 w-6 text-gray-500 mr-2"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        ></path>
+                      </svg>
+                      <span className="text-gray-500">Fetching Repositories</span>
+                    </div>
+                  ) : (userRepos[user.id] || []).length === 0 ? (
+                    <div className="text-gray-500 p-4">
+                      There is no repository on this user
+                    </div>
+                  ) : (
+                    (userRepos[user.id] || []).map((repo: GithubRepo) => (
+                      <ProjectResult
+                        key={repo.id}
+                        name={repo.name}
+                        id={isFavorite(repo.id) ? repo.id : undefined}
+                        forkCount={repo.forks_count}
+                        openIssues={repo.open_issues}
+                        watchers={repo.watchers}
+                        onSave={() => {
+                          const payload = {
+                            id: repo.id,
+                            username: user.login,
+                            name: repo.name,
+                            forkCount: repo.forks_count,
+                            openIssues: repo.open_issues,
+                            watchers: repo.watchers,
+                          };
+                          return isFavorite(repo.id)
+                            ? removeFromFavorites(payload)
+                            : addToFavorites(payload);
+                        }}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
-      {visibleCount < totalResults && (
+      {visibleCount < totalResults && !isLoadingUser && (
         <div className="fixed left-1/2 transform -translate-x-1/2 z-50 flex justify-center bottom-20 md:bottom-8">
           <span
             className="cursor-pointer inline-flex items-center gap-2 px-6 py-2 text-black font-semibold rounded-full shadow-lg transition-all duration-200 active:scale-95 select-none bg-white"
